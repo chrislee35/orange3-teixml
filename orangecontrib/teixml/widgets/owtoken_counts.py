@@ -17,15 +17,17 @@ class TokenExtractorWorker(QThread):
     result = pyqtSignal(Table)  # emits the extract tokens Table
     progress = pyqtSignal(int)  # emits progress (0-100)
 
-    def __init__(self, directory: str, top_n: int):
+    def __init__(self, directory: str, top_n: int, normalize: bool):
         super().__init__()
         self.directory = directory
         self.top_n = top_n
+        self.normalize = normalize
 
     def run(self):
         directory = self.directory
         top_n = self.top_n
         set_progress = self.progress.emit
+        normalize = self.normalize
 
         counters = []
         titles = []
@@ -56,12 +58,17 @@ class TokenExtractorWorker(QThread):
             set_progress((100 * (i + 1)) // len(files))
 
         top_tokens = [tok for tok, _ in all_tokens.most_common(top_n)]
-        variables = [ContinuousVariable(f"{lemma}[{pos}]") for lemma, pos in top_tokens]
+        variables = [ContinuousVariable("Total Tokens"), ContinuousVariable("Uniq Tokens")] + \
+            [ContinuousVariable(f"{lemma}[{pos}]") for lemma, pos in top_tokens]
         domain = Domain(attributes=variables, class_vars=[], metas=[StringVariable("title")])
 
         rows = []
         for counter in counters:
-            row = [ counter.get(t, 0) for t in top_tokens ]
+            row = [counter.total(), len(counter)];
+            if normalize:
+                row.extend([ counter.get(t, 0)/counter.total() for t in top_tokens ])
+            else:
+                row.extend([ counter.get(t, 0) for t in top_tokens ])
             rows.append(row)
 
         rows = np.array(rows)
@@ -91,22 +98,26 @@ class OWTEITokenExtractor(OWWidget, ConcurrentMixin):
 
     directory = Setting("")
     top_n = Setting(100)
+    normalize = Setting(False)
 
     def __init__(self):
         super().__init__()
 
-        self._task = None
+        self.worker = None
+        self.table = None
         self.layout_main_area()
+        if len(self.directory) > 0 and os.path.exists(self.directory):
+            self.start_extraction()
 
     def layout_main_area(self):
         box = gui.vBox(self.mainArea, "TEI Token Extraction")
 
         self.dir_label = gui.label(box, self, "Selected Directory: None")
         gui.button(box, self, "Choose Directory", callback=self.choose_directory)
-        self.top_slider = gui.hSlider(
-            box, self, "top_n", minValue=10, maxValue=1000,
-            label="Number of top tokens", ticks=10
-        )
+        self.top_spinner = gui.doubleSpin(box, self, "top_n", 10, 1000, step=1, label="Number of top tokens", decimals=0)
+        self.normalize_checkbox = gui.checkBox(box, self, "normalize", "Normalize")
+        self.normalize_checkbox.setToolTip("Divide the counts by the total number of tokens per document.")
+        self.normalize_checkbox.clicked.connect(self.on_normalize_checked)
         self.extract_button = gui.button(box, self, "Extract Tokens", callback=self.start_extraction)
         self.mainArea.layout().setAlignment(Qt.AlignTop)
 
@@ -117,6 +128,18 @@ class OWTEITokenExtractor(OWWidget, ConcurrentMixin):
         if dirpath:
             self.directory = dirpath
             self.dir_label.setText(f"Selected Directory: {os.path.basename(dirpath)}")
+    
+    def on_normalize_checked(self):
+        if self.table is not None:
+            table = self.table
+            X_df = table.X_df
+            if self.normalize:
+                X_df.iloc[:, 2:] = X_df.iloc[:, 2:].div(X_df.iloc[:, 1], axis=0)
+            else:
+                X_df.iloc[:, 2:] = X_df.iloc[:, 2:].multiply(X_df.iloc[:, 1], axis=0)
+
+            new_table = Table(table.domain, X_df.to_numpy(), table.Y, table.metas)
+            self.Outputs.data.send(new_table)
 
     def start_extraction(self):
         if not self.directory:
@@ -124,13 +147,14 @@ class OWTEITokenExtractor(OWWidget, ConcurrentMixin):
             return
         self.error()
         self.progressBarInit()
-        self.worker = TokenExtractorWorker(self.directory, self.top_n)
+        self.worker = TokenExtractorWorker(self.directory, int(self.top_n), self.normalize)
         self.worker.progress.connect(self.progressBarSet)
         self.worker.result.connect(self._on_result)
         self.worker.start()
 
     def _on_result(self, table: Table):
         self.progressBarFinished()
+        self.table = table
         self.Outputs.data.send(table)
 
 
