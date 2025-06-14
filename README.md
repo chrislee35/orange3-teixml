@@ -28,4 +28,4 @@ Data table with the counts of tokens for various Shakesphere works and An abdrid
 
 Data table with the frequency of tokens for various Shakesphere works and An abdridgement of English military discipline.
 
-![Data table with the frequency of tokens for various Shakesphere works and An abdridgement of English military discipline.](imgs/Data%20Table%20with%20Counts.png)
+![Data table with the frequency of tokens for various Shakesphere works and An abdridgement of English military discipline.](imgs/Data%20Table%20with%20Normalized%20Frequencies.png)
