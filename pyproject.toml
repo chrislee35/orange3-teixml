@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "orange3-teixml"
-version = "0.0.1"
+version = "0.0.2"
 description = "A collection of Orange3 widgets to process TEI-XML files"
 readme = "README.md"
 requires-python = ">=3.11"
