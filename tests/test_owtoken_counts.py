@@ -19,6 +19,7 @@ class TestOWTEIXMLTokenExtractor(WidgetTest):
         # Set directory and top_n value
         self.widget.directory = input_dir
         self.widget.top_spinner.setValue(15)
+        self.widget.attr_names = ["lemma", "ana"]
 
         # Simulate button click
         self.widget.extract_button.click()
@@ -52,6 +53,7 @@ class TestOWTEIXMLTokenExtractor(WidgetTest):
         self.widget.directory = input_dir
         self.widget.top_spinner.setValue(15)
         self.widget.normalize_checkbox.setChecked(True)
+        self.widget.attr_names = ["lemma", "ana"]
 
         # Simulate button click
         self.widget.extract_button.click()

@@ -66,7 +66,6 @@ class TokenExtractorWorker(QThread):
             set_progress((100 * (i + 1)) // len(files))
 
         top_tokens = [tok for tok, _ in all_tokens.most_common(top_n)]
-        print(top_tokens)
         variables = [ContinuousVariable("Total Words"), ContinuousVariable("Total Types")] + \
             [ContinuousVariable("_".join(token)) for token in top_tokens]
         domain = Domain(attributes=variables, class_vars=[], metas=[StringVariable("title")])
