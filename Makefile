@@ -23,3 +23,9 @@ clean:
 
 test:
 	python tests/*.py
+
+ruff:
+	ruff check orangecontrib/*/widgets/*.py
+
+pylint:
+	pylint orangecontrib/*/widgets/*.py

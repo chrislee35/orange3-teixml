@@ -1,6 +1,6 @@
 import os
 import xml.etree.ElementTree as ET
-from collections import Counter, defaultdict
+from collections import Counter
 
 import numpy as np
 
@@ -8,9 +8,9 @@ from AnyQt.QtWidgets import QFileDialog, QCheckBox
 from AnyQt.QtCore import Qt, QThread, pyqtSignal
 
 from Orange.widgets import gui
-from Orange.widgets.widget import OWWidget, Input, Output
+from Orange.widgets.widget import OWWidget, Output
 from Orange.widgets.settings import Setting
-from Orange.widgets.utils.concurrent import Task, ConcurrentMixin
+from Orange.widgets.utils.concurrent import ConcurrentMixin
 from Orange.data import Table, Domain, StringVariable, ContinuousVariable
 
 class TokenExtractorWorker(QThread):
@@ -72,7 +72,7 @@ class TokenExtractorWorker(QThread):
 
         rows = []
         for counter in counters:
-            row = [counter.total(), len(counter)];
+            row = [counter.total(), len(counter)]
             if normalize:
                 row.extend([ counter.get(t, 0)/counter.total() for t in top_tokens ])
             else:
